@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.router import router
+from bot.commands import setup_commands
 from core.Database import DatabaseHandle
 
 
@@ -21,13 +22,20 @@ admins = [int(admin_id) for admin_id in config('ADMINS', cast=str).split(',')] #
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-bot = Bot(token=config('TOKEN', cast=str), default=DefaultBotProperties(parse_mode=ParseMode.HTML)) #type: ignore
 
 # Run the bot
 async def main() -> None:
+
+    bot = Bot(
+        token=config('TOKEN', cast=str), 
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+
     databasePool:Pool = await dataBase.create_pool()
     dispatcher = Dispatcher(storage=MemoryStorage(), pool=databasePool)
     dispatcher.include_router(router)
+
+    await setup_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)
     await dispatcher.start_polling(bot)
 

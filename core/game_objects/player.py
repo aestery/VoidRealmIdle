@@ -1,6 +1,6 @@
 from core.Database import PlayerDatabase
 from core.text_handle import Language
-from core.responce_dto import StringResponce, Responce
+from core.dto.responce_dto import StringResponce, Responce
 
 class Player:
     """Represents a game player; handles DB-backed operations."""

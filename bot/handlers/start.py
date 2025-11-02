@@ -6,8 +6,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from core.game_objects.player import Player
-from core.text_handle import Languages, I18n, TextKeys
+from core.text_handle import Languages, I18n
 from bot.states import NameState, LanguageState
+from bot.keyboard.start_keyboard import start_keyboard
 
 
 start_router = Router()
@@ -17,6 +18,7 @@ language_router = Router()
 @start_router.message(Command("start"))
 async def start(message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
     """Initialization of player in database"""
+
     user_id: int = message.from_user.id 
 
     player = Player(pool, user_id)
@@ -43,7 +45,7 @@ async def set_language(callback: types.CallbackQuery, state: FSMContext, pool: a
     i18n = I18n(language)
 
     await state.clear()
-    await callback.message.edit_text(i18n.text(TextKeys.language_set))
+    await callback.message.edit_text(i18n.texts.start.messages_text.language_set)
 
     await name_initialization(callback.message, state, player)
 
@@ -53,9 +55,9 @@ async def name_initialization(message: types.Message, state: FSMContext, player:
     i18n = I18n(language)   
 
     if responce.status:
-        await message.answer(i18n.text(TextKeys.welcome_back, username=responce.value))
+        await message.answer(i18n.texts.start.messages_text.welcome_back.format(username=responce.value))
     else:
-        await message.answer(i18n.text(TextKeys.welcome_new))
+        await message.answer(i18n.texts.start.messages_text.welcome_new)
         await state.set_state(NameState.waiting_for_name)
 
 @name_router.message(NameState.waiting_for_name)
@@ -68,10 +70,10 @@ async def set_name(message: types.Message, state: FSMContext, pool: asyncpg.Pool
     i18n = I18n(language)   
 
     if not responce.status:
-        await message.answer(i18n.text(TextKeys.name_invalid))
+        await message.answer(i18n.texts.start.messages_text.name_invalid)
         return
     else:
-        await message.answer(i18n.text(TextKeys.name_valid))
+        await message.answer(i18n.texts.start.messages_text.name_valid)
 
     await state.clear()
 

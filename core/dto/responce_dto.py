@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from core.text_handle import Language
 
 @dataclass
 class Responce():
