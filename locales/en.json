@@ -2,5 +2,6 @@
   "welcome_new": "Welcome, adventurer! Enter your character name:",
   "welcome_back": "Welcome back, {username}!",
   "name_invalid": "Name must be 1 to 50 characters. Try again.",
+  "name_valid": "Welcome, {username}, in the Void Realm!",
   "language_set": "Language successfuly set!"
 }

@@ -7,6 +7,13 @@ class Languages:
     eng = Language('en')
     rus = Language('ru')
 
+class TextKeys:
+    welcome_new = 'welcome_new'
+    welcome_back = 'welcome_back'
+    name_invalid = 'name_invalid'
+    language_set = 'language_set'
+    name_valid = 'name_valid'
+
 # Current implementation assume existance of localization files in project folder. Usage of Database under question
 class I18n:
     def __init__(self, language:Language="en"):
