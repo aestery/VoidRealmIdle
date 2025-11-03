@@ -2,5 +2,4 @@ asyncpg
 aiogram
 APScheduler
 python-decouple
-python-dotenv
 psycopg

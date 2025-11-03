@@ -23,8 +23,8 @@ class DatabaseTable:
         async with self.pool.acquire() as connection:
             return await connection.fetchval(
                 f"SELECT {attribute} "
-                f"FROM {DatabaseTable.TABLE_NAME} "
-                f"WHERE {DatabaseTable.KEY}=$1;",
+                f"FROM {self.TABLE_NAME} "
+                f"WHERE {self.KEY}=$1;",
                 key
             )
     
@@ -71,13 +71,13 @@ class PlayerTable(DatabaseTable):
             )
 
     async def get_character_name(self) -> str:
-        return await self._get_element(key=self.user_id, element=self.CHARACTER_NAME)
+        return await self._get_element(key=self.user_id, attribute=self.CHARACTER_NAME)
 
     async def get_language(self) -> str:
-        return await self._get_element(key=self.user_id, element=self.LANGUAGE) 
+        return await self._get_element(key=self.user_id, attribute=self.LANGUAGE) 
 
     async def get_kind(self) -> str:
-        return await self._get_element(key=self.user_id, element=self.KIND)   
+        return await self._get_element(key=self.user_id, attribute=self.KIND)   
 
     async def set_character_name(self, name: str) -> None:
         await self._set_element(key=self.user_id, attribute=self.CHARACTER_NAME, value=name)

@@ -50,12 +50,12 @@ async def set_language(callback: types.CallbackQuery, state: FSMContext, pool: a
     await name_initialization(callback.message, state, player)
 
 async def name_initialization(message: types.Message, state: FSMContext, player: Player):
-    responce = await player.get_name()
+    has_name, name = await player.get_name()
     language = await player.get_language()
     i18n = I18n(language)   
 
-    if responce.status:
-        await message.answer(i18n.texts.start.messages_text.welcome_back.format(username=responce.value))
+    if has_name:
+        await message.answer(i18n.texts.start.messages_text.welcome_back.format(username=name))
     else:
         await message.answer(i18n.texts.start.messages_text.welcome_new)
         await state.set_state(NameState.waiting_for_name)
@@ -65,15 +65,15 @@ async def set_name(message: types.Message, state: FSMContext, pool: asyncpg.Pool
     """Set up character name"""
     name: str = message.text
     player = Player(pool, message.from_user.id)
-    responce = await player.set_name(name)
+    is_valid_name = await player.set_name(name)
     language = await player.get_language()
     i18n = I18n(language)   
 
-    if not responce.status:
+    if not is_valid_name:
         await message.answer(i18n.texts.start.messages_text.name_invalid)
         return
     else:
-        await message.answer(i18n.texts.start.messages_text.name_valid)
+        await message.answer(i18n.texts.start.messages_text.name_valid.format(username=name))
 
     await state.clear()
 
