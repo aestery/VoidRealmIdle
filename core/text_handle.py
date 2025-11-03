@@ -5,8 +5,8 @@ from core.dto.text_dto import TextDTO
 Language = NewType('Language', str)
 
 class Languages:
-    eng = Language('en')
-    rus = Language('ru')
+    eng: Language = Language('en')
+    rus: Language = Language('ru')
 
 # Current implementation assume existance of localization files in project folder. Usage of Database under question
 class I18n:

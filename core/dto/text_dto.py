@@ -1,7 +1,7 @@
 from typing import Any, Dict, Type, TypeVar
 
-T = TypeVar("T", bound="JsonDTO")
 
+T = TypeVar("T", bound="JsonDTO")
 
 class JsonDTO():
     """Base class for JSON-based DTOs."""

@@ -1,9 +1,7 @@
-from dataclasses import dataclass
+from typing import TypedDict, NotRequired
+from core.game_objects.kinds import Kind
 
-@dataclass
-class Responce():
+
+class Responce(TypedDict):
     status: bool
-
-@dataclass
-class StringResponce(Responce):
-    value: str
+    value: NotRequired[str | Kind]
