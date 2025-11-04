@@ -49,7 +49,7 @@ class DatabaseTable:
             )
 
 class PlayerTable(DatabaseTable):
-    def __init__(self, pool, user_id):
+    def __init__(self, pool: asyncpg.Pool, user_id: int):
         self.TABLE_NAME = f"{SCHEMA}.player_info"
         self.KEY = "user_id"
 
@@ -59,6 +59,15 @@ class PlayerTable(DatabaseTable):
 
         self.pool = pool
         self.user_id = user_id
+
+    async def player_exists(self):
+        async with self.pool.acquire() as connection:
+            return await connection.fetchval(
+                f"SELECT EXISTS ("
+                f"SELECT 1 FROM {self.TABLE_NAME} "
+                f"WHERE {self.KEY} = $1);",
+                self.user_id
+            )
 
     async def create_character(self, name: str, language: str) -> None:
         async with self.pool.acquire() as connection:

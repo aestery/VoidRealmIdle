@@ -1,7 +1,12 @@
 from aiogram import Router
 from bot.handlers import start
+from bot.handlers.start import PlayerInitializationHandler
+
 
 router = Router()
-router.include_router(start.start_router)
-router.include_router(start.name_router)
-router.include_router(start.language_router)
+
+player_initialization = PlayerInitializationHandler()
+router.include_router(player_initialization.get_class_router())
+
+
+

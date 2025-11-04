@@ -17,7 +17,8 @@ class Player:
     # --- Creation & Initialization ---
     async def create(self, name: str | None = None, language:Language=Language('en')) -> None:
         """Create new player in DB."""
-        await self.playerDatabase.create_character(name, language)
+        if await self.playerDatabase.player_exists():
+            await self.playerDatabase.create_character(name, language)
 
     # --- Getters ---
     async def get_name(self) -> Tuple[bool, str]:
