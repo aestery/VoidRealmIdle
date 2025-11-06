@@ -8,5 +8,3 @@ router = Router()
 player_initialization = PlayerInitializationHandler()
 router.include_router(player_initialization.get_class_router())
 
-
-

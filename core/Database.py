@@ -1,10 +1,12 @@
 import asyncpg
+import logging
 
 
 SCHEMA = "test"
 
 class DatabaseTable:
     def __init__(self, pool: asyncpg.Pool) -> None:
+        self.logger = logging.getLogger(__name__)
         self.pool = pool
         self.TABLE_NAME: str = ""
         self.KEY: str = ""
@@ -20,6 +22,7 @@ class DatabaseTable:
         Returns:
             element (Any): The value of the specified column for the given key.
         """
+        self.logger.debug("DATABASE_GET %s attribute from %s for user_id=%i", attribute, self.TABLE_NAME, key)
         async with self.pool.acquire() as connection:
             return await connection.fetchval(
                 f"SELECT {attribute} "
@@ -40,6 +43,7 @@ class DatabaseTable:
         Returns:
             None
         """
+        self.logger.debug("DATABASE_SET %s attribute in %s for user_id=%i with value [%s]", attribute, self.TABLE_NAME, key, str(value))
         async with self.pool.acquire() as connection:
             await connection.execute(
                 f"UPDATE {self.TABLE_NAME} " 
@@ -50,6 +54,7 @@ class DatabaseTable:
 
 class PlayerTable(DatabaseTable):
     def __init__(self, pool: asyncpg.Pool, user_id: int):
+        super().__init__(pool)
         self.TABLE_NAME = f"{SCHEMA}.player_info"
         self.KEY = "user_id"
 
@@ -57,7 +62,6 @@ class PlayerTable(DatabaseTable):
         self.LANGUAGE = "language"
         self.KIND = "kind"
 
-        self.pool = pool
         self.user_id = user_id
 
     async def player_exists(self):
@@ -71,13 +75,14 @@ class PlayerTable(DatabaseTable):
 
     async def create_character(self, name: str, language: str) -> None:
         async with self.pool.acquire() as connection:
-            await connection.execute(
+            status = await connection.execute(
                 f"INSERT INTO {self.TABLE_NAME} "
                 f"({self.KEY}, {self.CHARACTER_NAME}, {self.LANGUAGE}) "
                 "VALUES ($1, $2, $3) "
                 f"ON CONFLICT ({self.KEY}) DO NOTHING;",
                 self.user_id, name, language
             )
+            self.logger.debug("TRANSACTION_STATUS character creation: %s", status)
 
     async def get_character_name(self) -> str:
         return await self._get_element(key=self.user_id, attribute=self.CHARACTER_NAME)

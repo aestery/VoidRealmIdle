@@ -1,5 +1,7 @@
+import yaml
 import asyncio
 import logging
+import logging.config
 from asyncpg import Pool
 from decouple import config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -11,6 +13,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.router import router
 from bot.commands import setup_commands
+from bot.logging.logger_handler import LoggingMiddleware
 from core.Database import DatabaseHandle
 
 
@@ -19,20 +22,28 @@ dataBase = DatabaseHandle(config('DB_URL'))
 scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
 admins = [int(admin_id) for admin_id in config('ADMINS', cast=str).split(',')] #type: ignore
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+with open(config('MIDDLEWARE_LOG_CONFIG'), "r") as f:
+    log_config = yaml.safe_load(f.read())
+    logging.config.dictConfig(log_config)
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.info("Logging initialized")
 
 
 # Run the bot
 async def main() -> None:
 
     bot = Bot(
-        token=config('TOKEN', cast=str), 
+        token=config('TOKEN', cast=str),  # type: ignore
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
     databasePool:Pool = await dataBase.create_pool()
     dispatcher = Dispatcher(storage=MemoryStorage(), pool=databasePool)
+    dispatcher.message.middleware(LoggingMiddleware(logger))
+    
+    dispatcher.callback_query.middleware(LoggingMiddleware(logger))
     dispatcher.include_router(router)
 
     await setup_commands(bot)

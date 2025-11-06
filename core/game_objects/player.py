@@ -1,8 +1,8 @@
+import logging
+from typing import Tuple
 from core.Database import PlayerTable
 from core.text_handle import Language
-from core.dto.responce_dto import Responce
 from core.game_objects.kinds import Kind
-from typing import Tuple
 
 class Player:
     """Represents a game player; handles DB-backed operations."""
@@ -13,11 +13,14 @@ class Player:
         self.pool = pool
         self.id = user_id
         self.playerDatabase = PlayerTable(pool, user_id)
+        self.logger = logging.getLogger(__name__)
 
     # --- Creation & Initialization ---
     async def create(self, name: str | None = None, language:Language=Language('en')) -> None:
         """Create new player in DB."""
-        if await self.playerDatabase.player_exists():
+        player_exists = await self.playerDatabase.player_exists()
+        self.logger.debug("Try to create player in db, player status: %s:", str(player_exists))
+        if player_exists == False:
             await self.playerDatabase.create_character(name, language)
 
     # --- Getters ---
@@ -28,7 +31,9 @@ class Player:
     
     async def get_language(self) -> Language:
         """Return current player language."""
+        self.logger.debug("GET language")
         language = await self.playerDatabase.get_language()
+        self.logger.debug("GOT language: %s", language)
         return Language(language)
     
     async def get_kind(self) -> Kind:
@@ -52,7 +57,7 @@ class Player:
     
     async def set_kind(self, kind: Kind) -> None:
         """Set player kind if not found if db."""
-        kind = await self.playerDatabase.get_kind()
-        if kind:
+        kind_in_db = await self.playerDatabase.get_kind()
+        if kind_in_db:
             await self.playerDatabase.set_kind(kind.value)
     

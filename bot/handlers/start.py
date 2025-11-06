@@ -1,8 +1,9 @@
 import asyncpg
 import inspect
+import logging
 
 from aiogram import Router, types
-from aiogram.filters import Command, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 from core.game_objects.player import Player
@@ -33,7 +34,8 @@ class BaseHandler:
 class PlayerInitializationHandler(BaseHandler):
     def __init__(self):
         super().__init__()
-        self.player: Player = None
+        self.player: Player | None = None
+        self.logger = logging.getLogger(__name__)
 
         self.start_router = Router(name="Player Initialization")
         self.language_router = Router(name="Language Initialization")
@@ -41,12 +43,15 @@ class PlayerInitializationHandler(BaseHandler):
         self.kind_router = Router(name="Kind Initialization")
 
         self.start_router.message.register(self.start, Command("start"))
-        self.language_router.message.register(self.set_language, InitStates.waiting_for_language)
+        self.language_router.callback_query.register(self.set_language, InitStates.waiting_for_language)
         self.name_router.message.register(self.set_name, InitStates.waiting_for_name)
-        self.kind_router.message.register(self.set_kind, InitStates.waiting_for_kind)
+        self.kind_router.callback_query.register(self.set_kind, InitStates.waiting_for_kind)
+        
+        self.logger.debug("player object created")
 
     async def start(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
         """Initialization of player in database"""
+        self.logger.debug("player creation step started")
         user_id: int = message.from_user.id 
 
         self.player = Player(pool, user_id)
@@ -54,6 +59,7 @@ class PlayerInitializationHandler(BaseHandler):
         
         await language_choice_keyboard(message)
         await state.set_state(InitStates.waiting_for_language)
+        self.logger.debug("player creation step ended")
 
     async def set_language(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool) -> None:
         """Set up game language for convenient experience"""
@@ -65,11 +71,11 @@ class PlayerInitializationHandler(BaseHandler):
         await state.clear()
         await callback.message.edit_text(i18n.texts.start.messages_text.language_set)
 
-        await self.name_initialization(callback.message, state, self.player)
+        await self.name_initialization(callback.message, state)
 
-    async def name_initialization(message: types.Message, state: FSMContext, player: Player):
-        has_name, name = await player.get_name()
-        language = await player.get_language()
+    async def name_initialization(self, message: types.Message, state: FSMContext):
+        has_name, name = await self.player.get_name()
+        language = await self.player.get_language()
         i18n = I18n(language)   
 
         if has_name:
@@ -79,12 +85,11 @@ class PlayerInitializationHandler(BaseHandler):
             await message.answer(i18n.texts.start.messages_text.welcome_new)
             await state.set_state(InitStates.waiting_for_name)
 
-    async def set_name(message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
+    async def set_name(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
         """Set up character name"""
         name: str = message.text
-        player = Player(pool, message.from_user.id)
-        is_valid_name = await player.set_name(name)
-        language = await player.get_language()
+        is_valid_name = await self.player.set_name(name)
+        language = await self.player.get_language()
         i18n = I18n(language)   
 
         if not is_valid_name:
@@ -96,5 +101,5 @@ class PlayerInitializationHandler(BaseHandler):
         await state.clear()
         await state.set_state(InitStates.waiting_for_kind)
 
-    async def set_kind(message: types.Message, state: FSMContext, pool: asyncpg.Pool):
-        pass
+    async def set_kind(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
+        await state.clear()
