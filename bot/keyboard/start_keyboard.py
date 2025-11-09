@@ -2,7 +2,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 
-from core.text_handle import Languages
+from core.dto.text_dto import Languages
 from core.game_objects.kinds import Kind
 
 def start_keyboard():

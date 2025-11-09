@@ -1,89 +1,68 @@
 import asyncpg
-import inspect
-import logging
 
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from core.text.localization import I18n
+from core.text.initialization_text import InitializationTexts
 from core.game_objects.player import Player
-from core.text_handle import I18n
-from bot.states import InitStates
+from core.dto.text_dto import Language
+from bot.states import InitStates, IntroductionStates
 from bot.keyboard.start_keyboard import language_choice_keyboard
+from bot.handlers.base_handler import BaseHandler
 
-
-class BaseHandler:
-    """
-    Base handler class that automatically builds a composite router
-    from all attributes ending with '_router'.
-    """
-    def __init__(self):
-        self.router = Router(name=self.__class__.__name__)
-    
-    def get_class_router(self):
-        """
-        Finds all attributes ending with '_router' and includes them
-        into the main router.
-        """
-        for name, attr in inspect.getmembers(self):
-            if name.endswith("_router") and isinstance(attr, Router):
-                self.router.include_router(attr)
-        
-        return self.router
 
 class PlayerInitializationHandler(BaseHandler):
     def __init__(self):
         super().__init__()
-        self.player: Player | None = None
-        self.logger = logging.getLogger(__name__)
-
+        self.logger.debug("player object created")
+    
+    def _set_routers(self):
         self.start_router = Router(name="Player Initialization")
         self.language_router = Router(name="Language Initialization")
         self.name_router = Router(name="Name Initialization")
-        self.kind_router = Router(name="Kind Initialization")
-
+        self.end_router = Router(name="End Initialization")
+    
+    def _register_routers(self):
         self.start_router.message.register(self.start, Command("start"))
-        self.language_router.callback_query.register(self.set_language, InitStates.waiting_for_language)
-        self.name_router.message.register(self.set_name, InitStates.waiting_for_name)
-        self.kind_router.callback_query.register(self.set_kind, InitStates.waiting_for_kind)
-        
-        self.logger.debug("player object created")
+        self.language_router.callback_query.register(self.set_language, InitStates.wait_for_language)
+        self.name_router.message.register(self.set_name, InitStates.wait_for_name)
+        self.end_router.callback_query.register(self.end, InitStates.wait_to_end)
 
-    async def start(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
+    async def start(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool, i18n: I18n) -> None:
         """Initialization of player in database"""
         self.logger.debug("player creation step started")
         user_id: int = message.from_user.id 
 
         self.player = Player(pool, user_id)
+        self.text_handler: InitializationTexts = InitializationTexts(i18n)
         await self.player.create()
         
         await language_choice_keyboard(message)
-        await state.set_state(InitStates.waiting_for_language)
+        await state.set_state(InitStates.wait_for_language)
         self.logger.debug("player creation step ended")
 
-    async def set_language(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool) -> None:
+    async def set_language(self, callback: types.CallbackQuery, state: FSMContext, i18n: I18n) -> None:
         """Set up game language for convenient experience"""
-        language = callback.data  # 'en' or 'ru'
+        language: Language = callback.data
         await self.player.set_language(language)
-        
-        i18n = I18n(language)
+        i18n.set_actual_language(language)
 
         await state.clear()
-        await callback.message.edit_text(i18n.texts.start.messages_text.language_set)
+        await callback.message.edit_text(self.text_handler.language_setup_message())
 
         await self.name_initialization(callback.message, state)
 
     async def name_initialization(self, message: types.Message, state: FSMContext):
         has_name, name = await self.player.get_name()
-        language = await self.player.get_language()
-        i18n = I18n(language)   
 
         if has_name:
-            await message.answer(i18n.texts.start.messages_text.welcome_back.format(username=name))
-            await state.set_state(InitStates.waiting_for_kind)
+            await message.answer(self.text_handler.welcome_existing_player(name))
+            await state.set_state(InitStates.wait_to_end)
         else:
-            await message.answer(i18n.texts.start.messages_text.welcome_new)
-            await state.set_state(InitStates.waiting_for_name)
+            await message.answer(self.text_handler.welcome_new_player())
+            await state.set_state(InitStates.wait_for_name)
 
     async def set_name(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
         """Set up character name"""
@@ -93,13 +72,33 @@ class PlayerInitializationHandler(BaseHandler):
         i18n = I18n(language)   
 
         if not is_valid_name:
-            await message.answer(i18n.texts.start.messages_text.name_invalid)
+            await message.answer(self.text_handler.name_invalid())
             return
         else:
-            await message.answer(i18n.texts.start.messages_text.name_valid.format(username=name))
+            await message.answer(self.text_handler.name_valid(name))
 
         await state.clear()
-        await state.set_state(InitStates.waiting_for_kind)
-
-    async def set_kind(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
+        await state.set_state(InitStates.wait_to_end)
+    
+    async def end(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
         await state.clear()
+        await state.set_state(IntroductionStates.wait_to_start)
+
+
+class IntroductionLevel(BaseHandler):
+    def __init__(self):
+        super().__init__()
+        self.logger.debug("Education level started")
+
+    def _set_routers(self):
+        self.start_router = Router()
+    
+    def _register_routers(self):
+        self.start_router.callback_query.register(self.start, IntroductionStates.wait_to_start)
+
+    async def start(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
+        self.pool = pool
+        self.player = Player(pool=pool, user_id=callback.message.from_user.id)
+        
+    async def end(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
+        pass

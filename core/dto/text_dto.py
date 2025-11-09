@@ -1,7 +1,12 @@
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Dict, Type, TypeVar, NewType
 
 
+Language = NewType('Language', str)
 T = TypeVar("T", bound="JsonDTO")
+
+class Languages:
+    eng: Language = Language('en')
+    rus: Language = Language('ru')
 
 class JsonDTO():
     """Base class for JSON-based DTOs."""

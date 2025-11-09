@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 from core.Database import PlayerTable
-from core.text_handle import Language
+from core.dto.text_dto import Language
 from core.game_objects.kinds import Kind
 
 class Player:

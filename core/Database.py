@@ -6,7 +6,7 @@ SCHEMA = "test"
 
 class DatabaseTable:
     def __init__(self, pool: asyncpg.Pool) -> None:
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(name = f"{self.__class__.__module__}.{self.__class__.__name__}")
         self.pool = pool
         self.TABLE_NAME: str = ""
         self.KEY: str = ""
