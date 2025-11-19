@@ -1,8 +1,8 @@
 import logging
 from typing import Tuple
-from core.Database import PlayerTable
+from core.database.player import PlayerTable
 from core.dto.text_dto import Language
-from core.game_objects.kinds import Kind
+
 
 class Player:
     """Represents a game player; handles DB-backed operations."""
@@ -36,11 +36,6 @@ class Player:
         self.logger.debug("GOT language: %s", language)
         return Language(language)
     
-    async def get_kind(self) -> Kind:
-        """Return kind of player character."""
-        race_str = await self.playerDatabase.get_kind()
-        return Kind(race_str)
-    
     # --- Setters ---
     async def set_language(self, language:Language) -> None:
         """Update player language."""
@@ -54,10 +49,6 @@ class Player:
             await self.playerDatabase.set_character_name(name)
     
         return valid
-    
-    async def set_kind(self, kind: Kind) -> None:
-        """Set player kind if not found if db."""
-        kind_in_db = await self.playerDatabase.get_kind()
-        if kind_in_db:
-            await self.playerDatabase.set_kind(kind.value)
+
+
     

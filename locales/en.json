@@ -11,6 +11,9 @@
     "keyboard_text":{
         "start":{
             "start": "Start Adventure"
+        },
+        "battle":{
+            "attack_choice": "Choose your attack:"
         }
     }
 }

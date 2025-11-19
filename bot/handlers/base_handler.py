@@ -9,13 +9,10 @@ from core.game_objects.player import Player
 from core.text.base_text_access import BaseTextAcess
 
 
-class ICallbackHandler(ABC):
+class IHandler(ABC):
     @abstractmethod
-    async def start(self, callback: types.CallbackQuery, pool: asyncpg.Pool, state: FSMContext):
-        """entry point to game substage, should be defined with """
-    @abstractmethod
-    async def end(self, callback: types.CallbackQuery, pool: asyncpg.Pool, state: FSMContext):
-        """exit point, defines followup interactions"""
+    async def start(self, callback: types.CallbackQuery | types.Message, pool: asyncpg.Pool, state: FSMContext):
+        """entry point to game substage"""
     @abstractmethod
     def _set_routers(self):
         """define aiogram routers of handler"""
@@ -24,7 +21,7 @@ class ICallbackHandler(ABC):
         """register defined routers"""
 
 
-class BaseHandler(ICallbackHandler):
+class BaseHandler(IHandler):
     """
     Base handler class that automatically builds a composite router
     from all attributes ending with '_router'.

@@ -1,15 +1,27 @@
 import asyncpg
 import logging
+import inspect
 
-
+#defines work schema in db
 SCHEMA = "test"
 
 class DatabaseTable:
+    """
+    Defines base database interaction and data.
+
+    Predefined fields:
+        logger: object in charge of action logging
+        pool: object to connect database
+        TABLE NAME: need to be overridden in according to expected 
+    """
     def __init__(self, pool: asyncpg.Pool) -> None:
+        """
+        Class desctiption
+        """
         self.logger = logging.getLogger(name = f"{self.__class__.__module__}.{self.__class__.__name__}")
         self.pool = pool
         self.TABLE_NAME: str = ""
-        self.KEY: str = ""
+        self.KEY: str = "user_id"
 
     async def _get_element(self, key: int, attribute: str):
         """
@@ -51,62 +63,12 @@ class DatabaseTable:
                 f"WHERE {self.KEY} = $2; ",
                 value, key
             )
-
-class PlayerTable(DatabaseTable):
-    def __init__(self, pool: asyncpg.Pool, user_id: int):
-        super().__init__(pool)
-        self.TABLE_NAME = f"{SCHEMA}.player_info"
-        self.KEY = "user_id"
-
-        self.CHARACTER_NAME = "character_name"
-        self.LANGUAGE = "language"
-        self.KIND = "kind"
-
-        self.user_id = user_id
-
-    async def player_exists(self):
-        async with self.pool.acquire() as connection:
-            return await connection.fetchval(
-                f"SELECT EXISTS ("
-                f"SELECT 1 FROM {self.TABLE_NAME} "
-                f"WHERE {self.KEY} = $1);",
-                self.user_id
-            )
-
-    async def create_character(self, name: str, language: str) -> None:
-        async with self.pool.acquire() as connection:
-            status = await connection.execute(
-                f"INSERT INTO {self.TABLE_NAME} "
-                f"({self.KEY}, {self.CHARACTER_NAME}, {self.LANGUAGE}) "
-                "VALUES ($1, $2, $3) "
-                f"ON CONFLICT ({self.KEY}) DO NOTHING;",
-                self.user_id, name, language
-            )
-            self.logger.debug("TRANSACTION_STATUS character creation: %s", status)
-
-    async def get_character_name(self) -> str:
-        return await self._get_element(key=self.user_id, attribute=self.CHARACTER_NAME)
-
-    async def get_language(self) -> str:
-        return await self._get_element(key=self.user_id, attribute=self.LANGUAGE) 
-
-    async def get_kind(self) -> str:
-        return await self._get_element(key=self.user_id, attribute=self.KIND)   
-
-    async def set_character_name(self, name: str) -> None:
-        await self._set_element(key=self.user_id, attribute=self.CHARACTER_NAME, value=name)
     
-    async def set_language(self, language: str) -> None:
-        await self._set_element(key=self.user_id, attribute=self.LANGUAGE, value=language)
-    
-    async def set_kind(self, kind: str) -> None:
-        await self._set_element(key=self.user_id, attribute=self.KIND, value=kind)
-    
-class PlayerStatsDatabase:
-    TABLE = f"{SCHEMA}.player_stats"
-    id = "user_id"
-
-    health = ""
+    def _implementation_promise(self) -> None:
+        """Logg the promise of implementation"""
+        caller_frame = inspect.currentframe().f_back 
+        caller_function_name = caller_frame.f_code.co_name
+        self.logger.warning("NO IMPLEMENTATION Function %s is promised to be implemented but called without implementation!", caller_function_name)
 
 class DatabaseHandle():
     def __init__(self, dataBaseURL) -> None:

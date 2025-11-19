@@ -14,7 +14,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from bot.router import router
 from bot.commands import setup_commands
 from bot.logging.logger_handler import LoggingMiddleware
-from core.Database import DatabaseHandle
+from core.database.Database import DatabaseHandle
 from core.text.localization import I18n
 
 

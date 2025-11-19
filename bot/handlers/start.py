@@ -8,40 +8,44 @@ from core.text.localization import I18n
 from core.text.initialization_text import InitializationTexts
 from core.game_objects.player import Player
 from core.dto.text_dto import Language
-from bot.states import InitStates, IntroductionStates
-from bot.keyboard.start_keyboard import language_choice_keyboard
-from bot.handlers.base_handler import BaseHandler
 
+from aiogram.fsm.state import State, StatesGroup
+from bot.keyboard.keyboard import PlayerInitializationKeyboard, MenuKeyboard
+from bot.handlers.base_handler import BaseHandler
+from bot.handlers.menu import MenuStates
+
+
+class InitStates(StatesGroup):
+    wait_for_name = State()
+    start_state = State()
 
 class PlayerInitializationHandler(BaseHandler):
     def __init__(self):
         super().__init__()
-        self.logger.debug("player object created")
     
     def _set_routers(self):
         self.start_router = Router(name="Player Initialization")
         self.language_router = Router(name="Language Initialization")
         self.name_router = Router(name="Name Initialization")
-        self.end_router = Router(name="End Initialization")
     
     def _register_routers(self):
         self.start_router.message.register(self.start, Command("start"))
-        self.language_router.callback_query.register(self.set_language, InitStates.wait_for_language)
+        self.language_router.callback_query.register(self.set_language, InitStates.start_state)
         self.name_router.message.register(self.set_name, InitStates.wait_for_name)
-        self.end_router.callback_query.register(self.end, InitStates.wait_to_end)
 
     async def start(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool, i18n: I18n) -> None:
         """Initialization of player in database"""
-        self.logger.debug("player creation step started")
+        self.logger.debug("START player creation step")
         user_id: int = message.from_user.id 
 
         self.player = Player(pool, user_id)
         self.text_handler: InitializationTexts = InitializationTexts(i18n)
         await self.player.create()
         
-        await language_choice_keyboard(message)
-        await state.set_state(InitStates.wait_for_language)
-        self.logger.debug("player creation step ended")
+        keyboard = await PlayerInitializationKeyboard.language_choice_keyboard()
+        # Language initialization question in most recognizable and translatable language.
+        await message.answer("Choose your language:", reply_markup=keyboard) 
+        await state.set_state(InitStates.start_state)
 
     async def set_language(self, callback: types.CallbackQuery, state: FSMContext, i18n: I18n) -> None:
         """Set up game language for convenient experience"""
@@ -59,46 +63,27 @@ class PlayerInitializationHandler(BaseHandler):
 
         if has_name:
             await message.answer(self.text_handler.welcome_existing_player(name))
-            await state.set_state(InitStates.wait_to_end)
+            await self.end(message, state)
         else:
             await message.answer(self.text_handler.welcome_new_player())
             await state.set_state(InitStates.wait_for_name)
 
-    async def set_name(self, message: types.Message, state: FSMContext, pool: asyncpg.Pool) -> None:
+    async def set_name(self, message: types.Message, state: FSMContext) -> None:
         """Set up character name"""
         name: str = message.text
         is_valid_name = await self.player.set_name(name)
-        language = await self.player.get_language()
-        i18n = I18n(language)   
 
         if not is_valid_name:
             await message.answer(self.text_handler.name_invalid())
-            return
         else:
             await message.answer(self.text_handler.name_valid(name))
 
         await state.clear()
-        await state.set_state(InitStates.wait_to_end)
+        await self.end(message, state)
     
-    async def end(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
+    async def end(self, message: types.Message, state: FSMContext):
+        self.logger.debug("END finished start section")
+
         await state.clear()
-        await state.set_state(IntroductionStates.wait_to_start)
-
-
-class IntroductionLevel(BaseHandler):
-    def __init__(self):
-        super().__init__()
-        self.logger.debug("Education level started")
-
-    def _set_routers(self):
-        self.start_router = Router()
-    
-    def _register_routers(self):
-        self.start_router.callback_query.register(self.start, IntroductionStates.wait_to_start)
-
-    async def start(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
-        self.pool = pool
-        self.player = Player(pool=pool, user_id=callback.message.from_user.id)
-        
-    async def end(self, callback: types.CallbackQuery, state: FSMContext, pool: asyncpg.Pool):
-        pass
+        await state.set_state(MenuStates.MENUE)
+        await message.answer("Lets go to main menue", reply_markup=MenuKeyboard.enter_menue_keyboard())

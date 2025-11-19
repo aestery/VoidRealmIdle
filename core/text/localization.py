@@ -41,7 +41,6 @@ class I18n:
     def get_text(self, key: str) -> str:
         language: Language = self.actual_language if self.actual_language is not None else self.default_lang
         text = self.locales.get(str(language), None).get(key, None)
-        self.logger.debug(f"{self.locales.get(language, None)}")
         if not text: 
             self.logger.warning(
                 "Text with key: [%s] "

@@ -11,6 +11,9 @@
     "keyboard_text":{
         "start": {
             "start": "Начать приключение"
+        },
+        "battle":{
+            "attack_choice": "Выберете тип атаки:"
         }
     }
 }

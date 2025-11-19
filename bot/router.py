@@ -1,10 +1,19 @@
 from aiogram import Router
-from bot.handlers import start
+from bot.handlers.base_handler import BaseHandler
 from bot.handlers.start import PlayerInitializationHandler
+from bot.handlers.menu import Menu
 
 
 router = Router()
 
-player_initialization = PlayerInitializationHandler()
-router.include_router(player_initialization.get_class_router())
+# Seems like here would be contained all game stages. Somehow it feels incorrect.
+handlers: list[BaseHandler] = [
+    PlayerInitializationHandler(),
+    Menu()
+]
+
+# Set up router hierarchy 
+for handler in handlers:
+    router.include_router(handler.get_class_router())
+
 
