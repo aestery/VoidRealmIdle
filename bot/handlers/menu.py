@@ -20,6 +20,3 @@ class Menu(BaseHandler):
     
     async def start(self, message: types.Message):
         await message.answer("Welcome to menue")
-    
-    async def end(self, callback, pool, state):
-        return super().end(callback, pool, state)

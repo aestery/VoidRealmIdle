@@ -20,11 +20,11 @@ class Player:
         """Create new player in DB."""
         player_exists = await self.playerDatabase.player_exists()
         self.logger.debug("Try to create player in db, player status: %s:", str(player_exists))
-        if player_exists == False:
+        if not player_exists:
             await self.playerDatabase.create_character(name, language)
 
     # --- Getters ---
-    async def get_name(self) -> Tuple[bool, str]:
+    async def get_name(self) -> Tuple[bool, str | None]:
         """Fetch player name and language."""
         name = await self.playerDatabase.get_character_name()
         return (bool(name), name)

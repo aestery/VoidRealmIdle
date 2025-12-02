@@ -1,0 +1,83 @@
+name: VoidRealm
+
+services:
+  migrate:
+    build: .
+    container_name: game_migrate
+    env_file:
+      - .env
+    environment:
+      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-voidrealm}
+    volumes:
+      - ./bot:/app/bot
+      - ./core:/app/core
+      - ./locales:/app/locales
+      - ./main.py:/app/main.py
+      - ./run_migrations.py:/app/run_migrations.py
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "run_migrations.py"]
+    restart: "no"
+
+  bot:
+    build: .
+    container_name: game_bot
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-voidrealm}
+    volumes:
+      - ./bot:/app/bot
+      - ./core:/app/core
+      - ./locales:/app/locales
+      - ./main.py:/app/main.py
+      - ./run_migrations.py:/app/run_migrations.py
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["python", "main.py"]
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./bot
+          target: /app/bot
+          ignore:
+            - __pycache__/
+        - action: sync+restart
+          path: ./core
+          target: /app/core
+          ignore:
+            - __pycache__/
+        - action: sync+restart
+          path: ./main.py
+          target: /app/main.py
+        - action: sync
+          path: ./locales
+          target: /app/locales
+        - action: rebuild
+          path: ./requirements.txt
+        - action: rebuild
+          path: ./Dockerfile
+
+  db:
+    image: postgres:17
+    container_name: game_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-voidrealm}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+volumes:
+  pgdata:

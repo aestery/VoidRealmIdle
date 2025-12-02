@@ -37,9 +37,9 @@ class DatabaseTable:
         self.logger.debug("DATABASE_GET %s attribute from %s for user_id=%i", attribute, self.TABLE_NAME, key)
         async with self.pool.acquire() as connection:
             return await connection.fetchval(
-                f"SELECT {attribute} "
-                f"FROM {self.TABLE_NAME} "
-                f"WHERE {self.KEY}=$1;",
+                f"""SELECT {attribute} 
+                    FROM {self.TABLE_NAME} 
+                    WHERE {self.KEY} = $1;""",
                 key
             )
     
@@ -58,17 +58,11 @@ class DatabaseTable:
         self.logger.debug("DATABASE_SET %s attribute in %s for user_id=%i with value [%s]", attribute, self.TABLE_NAME, key, str(value))
         async with self.pool.acquire() as connection:
             await connection.execute(
-                f"UPDATE {self.TABLE_NAME} " 
-                f"SET {attribute} = $1 "
-                f"WHERE {self.KEY} = $2; ",
+                f"""UPDATE {self.TABLE_NAME} 
+                    SET {attribute} = $1 
+                    WHERE {self.KEY} = $2;""",
                 value, key
             )
-    
-    def _implementation_promise(self) -> None:
-        """Logg the promise of implementation"""
-        caller_frame = inspect.currentframe().f_back 
-        caller_function_name = caller_frame.f_code.co_name
-        self.logger.warning("NO IMPLEMENTATION Function %s is promised to be implemented but called without implementation!", caller_function_name)
 
 class DatabaseHandle():
     def __init__(self, dataBaseURL) -> None:
