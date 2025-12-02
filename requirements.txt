@@ -4,3 +4,4 @@ APScheduler
 python-decouple
 psycopg
 PyYAML
+pydantic

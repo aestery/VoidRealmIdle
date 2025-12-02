@@ -49,7 +49,7 @@ class PlayerInitializationHandler(BaseHandler):
 
     async def set_language(self, callback: types.CallbackQuery, state: FSMContext, i18n: I18n) -> None:
         """Set up game language for convenient experience"""
-        language: Language = callback.data
+        language: str | None = callback.data
         await self.player.set_language(language)
         i18n.set_actual_language(language)
 
@@ -70,7 +70,7 @@ class PlayerInitializationHandler(BaseHandler):
 
     async def set_name(self, message: types.Message, state: FSMContext) -> None:
         """Set up character name"""
-        name: str = message.text
+        name: str | None = message.text
         is_valid_name = await self.player.set_name(name)
 
         if not is_valid_name:

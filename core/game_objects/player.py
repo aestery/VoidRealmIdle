@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 from core.database.player import PlayerTable
-from core.dto.text_dto import Language
+from core.dto.text_dto import Language, Languages
 
 
 class Player:
@@ -37,12 +37,18 @@ class Player:
         return Language(language)
     
     # --- Setters ---
-    async def set_language(self, language:Language) -> None:
+    async def set_language(self, language: str | None) -> None:
         """Update player language."""
+        if not language:
+            language = Languages.eng
+
         await self.playerDatabase.set_language(language)
     
-    async def set_name(self, name:str) -> bool:
+    async def set_name(self, name: str | None) -> bool:
         """Set name if within limits."""
+        if not name:
+            name = "Leroy"
+
         valid = self.MIN_NAME_LEN <= len(name) <= self.MAX_NAME_LEN
 
         if valid:

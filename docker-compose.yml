@@ -28,12 +28,6 @@ services:
       - .env
     environment:
       DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-voidrealm}
-    volumes:
-      - ./bot:/app/bot
-      - ./core:/app/core
-      - ./locales:/app/locales
-      - ./main.py:/app/main.py
-      - ./run_migrations.py:/app/run_migrations.py
     depends_on:
       db:
         condition: service_healthy
