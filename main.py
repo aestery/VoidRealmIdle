@@ -4,7 +4,6 @@ import logging
 import logging.config
 from asyncpg import Pool
 from decouple import config
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -22,9 +21,6 @@ from core.text.localization import I18n
 async def main() -> None:
     dataBase = DatabaseHandle(config('DB_URL'))
 
-    scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
-    admins = [int(admin_id) for admin_id in config('ADMINS', cast=str).split(',')] #type: ignore
-
     with open(config('MIDDLEWARE_LOG_CONFIG'), "r") as f:
         log_config = yaml.safe_load(f.read())
         logging.config.dictConfig(log_config)
@@ -34,7 +30,7 @@ async def main() -> None:
     logger.info("Logging initialized")
 
     bot = Bot(
-        token=config('TOKEN', cast=str),  # type: ignore
+        token=str(config('TOKEN', cast=str)), 
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 

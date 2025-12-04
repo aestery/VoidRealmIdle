@@ -26,7 +26,7 @@ class MigrationRunner:
             await conn.execute(f"""CREATE SCHEMA IF NOT EXISTS {self.schema};""")
             
             # Create migrations table
-            await conn.execute(f"""
+            status = await conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS {self.migrations_table} (
                     id SERIAL PRIMARY KEY,
                     filename VARCHAR(255) NOT NULL UNIQUE,
@@ -34,7 +34,7 @@ class MigrationRunner:
                     checksum VARCHAR(64)
                 );
             """)
-            self.logger.info(f"Migrations table ensured: {self.migrations_table}")
+            self.logger.info(f"Migrations table ensured: {self.migrations_table}, {status}")
     
     async def get_applied_migrations(self) -> List[str]:
         """Get list of already applied migration filenames."""
@@ -44,6 +44,7 @@ class MigrationRunner:
                     FROM {self.migrations_table} 
                     ORDER BY id;"""
             )
+            logging.debug(f"Applied migrations fetched: {len(rows)} found")
             return [row['filename'] for row in rows]
     
     def get_migration_files(self) -> List[Tuple[str, Path]]:
@@ -53,18 +54,22 @@ class MigrationRunner:
             return []
         
         sql_files = sorted(self.migrations_dir.glob("*.sql"))
-        return [(f.name, f) for f in sql_files]
+        migrations = [(f.name, f) for f in sql_files]
+        self.logger.debug(f"Found {len(migrations)} migration files")
+        return migrations
     
     def _is_empty_sql(self, sql_content: str) -> bool:
         """Check if SQL content is empty or contains only comments/whitespace."""
         # Remove comments and whitespace
         lines = sql_content.split('\n')
         sql_lines = []
+        
         for line in lines:
             stripped = line.strip()
             # Skip empty lines and comment-only lines
             if stripped and not stripped.startswith('--'):
                 sql_lines.append(stripped)
+
         return len(sql_lines) == 0
     
     async def run_migration(self, filename: str, filepath: Path) -> None:
