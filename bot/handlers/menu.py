@@ -12,7 +12,7 @@ class Menu(BaseHandler):
         super().__init__()
         self.logger.debug("INITIALIZE menue handler")
     
-    def _set_routers(self):
+    def _set_routers(self): 
         self.menue_router = Router(name="Menu")
     
     def _register_routers(self):

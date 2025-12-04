@@ -47,7 +47,7 @@ class PlayerTable(DatabaseTable):
             )
 
             if user_id is None:
-                # Create new entry in tg_identity
+                # Create new entry in tg_identity table
                 user_id = await connection.fetchval(
                     f"""
                     INSERT INTO {self.TG_IDENTITY_TABLE} (telegram_user_id) 

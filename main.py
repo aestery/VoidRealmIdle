@@ -38,7 +38,12 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-    i18n = I18n(config('LOCALES'))
+    locales_path = config('LOCALES', cast=str)
+
+    if locales_path is None:
+        raise ValueError("LOCALES is not set in environment variables.")
+    
+    i18n = I18n(str(locales_path))
     databasePool:Pool = await dataBase.create_pool()
 
     dispatcher = Dispatcher(

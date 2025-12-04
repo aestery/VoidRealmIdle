@@ -6,6 +6,7 @@ import asyncpg
 import logging
 from pathlib import Path
 from typing import List, Tuple
+from core.game_objects.items.item import ItemRegistry
 
 
 class MigrationRunner:
@@ -91,13 +92,34 @@ class MigrationRunner:
                 
                 # Record migration
                 await conn.execute(
-                    f"""INSERT INTO {self.migrations_table} (filename) 
-                        VALUES ($1);""",
+                    f"""
+                    INSERT INTO {self.migrations_table} (filename) 
+                    VALUES ($1);
+                    """,
                     filename
                 )
                 
                 self.logger.info(f"Migration applied successfully: {filename}")
     
+    async def populate_item_relation(self) -> None:
+        """Populate item relation mapping after migrations."""
+        async with self.pool.acquire() as conn:
+            items = ItemRegistry.get_all_items()
+
+            for item_id, item in items.items():
+                
+                await conn.execute(
+                    f"""
+                    INSERT INTO {self.schema}.items (item_id)
+                    VALUES ($1)
+                    ON CONFLICT (item_id) DO NOTHING; 
+                    """,
+                    item_id
+                )
+                self.logger.debug(f"Item ID {item_id} populated in items table.")
+
+        self.logger.info("Item relation mapping populated.")
+
     async def run_all_pending(self) -> None:
         """Run all pending migrations in order."""
         await self.ensure_migrations_table()
@@ -119,4 +141,11 @@ class MigrationRunner:
             except Exception as e:
                 self.logger.error(f"Failed to apply migration {filename}: {e}")
                 raise
+        
+        # After all migrations, populate item relation mapping
+        try:
+            await self.populate_item_relation()
+        except Exception as e:
+            self.logger.error(f"Failed to populate item relation mapping: {e}")
+            raise
 

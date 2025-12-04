@@ -5,9 +5,9 @@ services:
     build: .
     container_name: game_migrate
     env_file:
-      - .env
+      - ./.env
     environment:
-      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-voidrealm}
+      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-voidrealm}
     volumes:
       - ./bot:/app/bot
       - ./core:/app/core
@@ -25,9 +25,9 @@ services:
     container_name: game_bot
     restart: always
     env_file:
-      - .env
+      - ./.env
     environment:
-      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-voidrealm}
+      DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-voidrealm}
     depends_on:
       db:
         condition: service_healthy
@@ -62,9 +62,9 @@ services:
     container_name: game_db
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-voidrealm}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:?database name not set}
+      POSTGRES_USER: ${POSTGRES_USER:?database user not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?database password not set}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

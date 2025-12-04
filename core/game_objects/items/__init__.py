@@ -1,0 +1,1 @@
+from . import item, weapons  # noqa: E401, F401 to ensure items are registered
